@@ -107,4 +107,5 @@ if _name_ == "_main_":
     app.run(debug=True, port=1670)
 
 if user.get("isBlocked", False):
+
     return jsonify({"message": "Your account is blocked. Contact admin."}), 403
