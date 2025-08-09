@@ -1,111 +1,111 @@
-from flask_pymongo import PyMongo
+// server.js
 
-mongo = PyMongo()
+const express = require('express');
+const mongoose = require('mongoose');
+const dotenv = require('dotenv');
+const jwt = require('jsonwebtoken');
 
-def get_user_by_id(user_id):
-    return mongo.db.users.find_one({"_id": user_id})
+// === Load environment variables ===
+dotenv.config();
 
-def delete_user_by_id(user_id):
-    return mongo.db.users.delete_one({"_id": user_id})
+// === Constants ===
+const PORT = process.env.PORT || 1670;
+const MONGO_URI = process.env.MONGO_URI || 'your_mongodb_connection_string';
+const JWT_SECRET = process.env.JWT_SECRET || 'your_jwt_secret';
 
-def block_user(user_id):
-    return mongo.db.users.update_one({"_id": user_id}, {"$set": {"isBlocked": True}})
+const app = express();
+app.use(express.json());
 
-def unblock_user(user_id):
-    return mongo.db.users.update_one({"_id": user_id}, {"$set": {"isBlocked": False}})
+// === Connect to MongoDB ===
+mongoose.connect(MONGO_URI, {
+  useNewUrlParser: true,
+  useUnifiedTopology: true
+})
+.then(() => console.log('✅ MongoDB connected'))
+.catch(err => console.error('❌ MongoDB connection error:', err));
 
+// === User Model ===
+const userSchema = new mongoose.Schema({
+  name: { type: String, required: true },
+  email: { type: String, required: true, unique: true },
+  password: { type: String, required: true },
+  role: { type: String, default: 'user' }, // 'user' or 'admin'
+  isBlocked: { type: Boolean, default: false }
+}, { timestamps: true });
 
-import jwt
-from flask import request, jsonify
-from functools import wraps
-from bson import ObjectId
-from config import JWT_SECRET
-from models.user_model import mongo
+const User = mongoose.model('User', userSchema);
 
-def token_required(f):
-    @wraps(f)
-    def decorated(*args, **kwargs):
-        token = None
-        if 'Authorization' in request.headers:
-            token = request.headers['Authorization'].split(" ")[1]
+// === Middleware: Token Required ===
+const tokenRequired = async (req, res, next) => {
+  const authHeader = req.headers.authorization;
+  if (!authHeader) return res.status(401).json({ message: 'Token is missing' });
 
-        if not token:
-            return jsonify({"message": "Token is missing"}), 401
+  const token = authHeader.split(' ')[1];
+  try {
+    const decoded = jwt.verify(token, JWT_SECRET);
+    const user = await User.findById(decoded.id);
+    if (!user) return res.status(401).json({ message: 'User not found' });
+    if (user.isBlocked) return res.status(403).json({ message: 'Your account is blocked. Contact admin.' });
 
-        try:
-            data = jwt.decode(token, JWT_SECRET, algorithms=["HS256"])
-            current_user = mongo.db.users.find_one({"_id": ObjectId(data["id"])})
-            if not current_user:
-                return jsonify({"message": "User not found"}), 401
-        except Exception as e:
-            return jsonify({"message": "Token is invalid", "error": str(e)}), 401
+    req.user = user;
+    next();
+  } catch (err) {
+    res.status(401).json({ message: 'Invalid token', error: err.message });
+  }
+};
 
-        return f(current_user, *args, **kwargs)
-    return decorated
+// === Middleware: Admin Only ===
+const adminOnly = (req, res, next) => {
+  if (req.user.role !== 'admin') {
+    return res.status(403).json({ message: 'Admin access required' });
+  }
+  next();
+};
 
-def admin_only(f):
-    @wraps(f)
-    def decorated(current_user, *args, **kwargs):
-        if current_user["role"] != "admin":
-            return jsonify({"message": "Admin access required"}), 403
-        return f(current_user, *args, **kwargs)
-    return decorated
+// === Routes ===
 
+// DELETE User
+app.delete('/api/admin/users/:id', tokenRequired, adminOnly, async (req, res) => {
+  try {
+    const deletedUser = await User.findByIdAndDelete(req.params.id);
+    if (!deletedUser) return res.status(404).json({ message: 'User not found' });
+    res.json({ message: 'User deleted successfully' });
+  } catch (err) {
+    res.status(500).json({ message: 'Server error' });
+  }
+});
 
-from flask import Blueprint, jsonify
-from bson import ObjectId
-from models.user_model import mongo
-from middleware.auth_middleware import token_required, admin_only
+// BLOCK User
+app.put('/api/admin/users/:id/block', tokenRequired, adminOnly, async (req, res) => {
+  try {
+    const updatedUser = await User.findByIdAndUpdate(
+      req.params.id,
+      { isBlocked: true },
+      { new: true }
+    );
+    if (!updatedUser) return res.status(404).json({ message: 'User not found' });
+    res.json({ message: 'User blocked successfully' });
+  } catch (err) {
+    res.status(500).json({ message: 'Server error' });
+  }
+});
 
-admin_bp = Blueprint('admin_bp', _name_)
+// UNBLOCK User
+app.put('/api/admin/users/:id/unblock', tokenRequired, adminOnly, async (req, res) => {
+  try {
+    const updatedUser = await User.findByIdAndUpdate(
+      req.params.id,
+      { isBlocked: false },
+      { new: true }
+    );
+    if (!updatedUser) return res.status(404).json({ message: 'User not found' });
+    res.json({ message: 'User unblocked successfully' });
+  } catch (err) {
+    res.status(500).json({ message: 'Server error' });
+  }
+});
 
-# Delete user account
-@admin_bp.route("/users/<user_id>", methods=["DELETE"])
-@token_required
-@admin_only
-def delete_user(current_user, user_id):
-    result = mongo.db.users.delete_one({"_id": ObjectId(user_id)})
-    if result.deleted_count == 0:
-        return jsonify({"message": "User not found"}), 404
-    return jsonify({"message": "User deleted successfully"})
-
-# Block user
-@admin_bp.route("/users/<user_id>/block", methods=["PUT"])
-@token_required
-@admin_only
-def block_user(current_user, user_id):
-    result = mongo.db.users.update_one({"_id": ObjectId(user_id)}, {"$set": {"isBlocked": True}})
-    if result.matched_count == 0:
-        return jsonify({"message": "User not found"}), 404
-    return jsonify({"message": "User blocked successfully"})
-
-# Unblock user
-@admin_bp.route("/users/<user_id>/unblock", methods=["PUT"])
-@token_required
-@admin_only
-def unblock_user(current_user, user_id):
-    result = mongo.db.users.update_one({"_id": ObjectId(user_id)}, {"$set": {"isBlocked": False}})
-    if result.matched_count == 0:
-        return jsonify({"message": "User not found"}), 404
-    return jsonify({"message": "User unblocked successfully"})
-
-from flask import Flask
-from flask_pymongo import PyMongo
-from config import MONGO_URI
-from models.user_model import mongo
-from routes.admin_routes import admin_bp
-
-app = Flask(_name_)
-app.config["MONGO_URI"] = MONGO_URI
-
-mongo.init_app(app)
-
-# Register routes
-app.register_blueprint(admin_bp, url_prefix="/api/admin")
-
-if _name_ == "_main_":
-    app.run(debug=True, port=1670)
-
-if user.get("isBlocked", False):
-
-    return jsonify({"message": "Your account is blocked. Contact admin."}), 403
+// === Start Server ===
+app.listen(PORT, () => {
+  console.log(`🚀 Server running on port ${PORT}`);
+});
