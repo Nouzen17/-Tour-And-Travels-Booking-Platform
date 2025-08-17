@@ -1,16 +1,16 @@
-import Tour from '../models/Tour.js'
+import User from '../models/User.js'
 
-//create new tour
-export const createTour = async (req,res)=>{
+//create new User
+export const createUser = async (req,res)=>{
 
-    const newTour = new Tour(req.body)
+    const newUser = new User(req.body)
 
     try {
-        const savedTour = await newTour.save()
+        const savedUser = await newUser.save()
 
         res.status(200).json({success:true, 
         message:'Sucessfully created',
-        data:savedTour})
+        data:savedUser})
 
     } catch (err) {
         res.status(500).json({
@@ -20,19 +20,19 @@ export const createTour = async (req,res)=>{
     }
 }
 
-//update tour
-export const updateTour = async(req,res)=>{
+//update User
+export const updateUser = async(req,res)=>{
 
     const id = req.params.id
     try {
-      const updatedTour = await Tour.findByIdAndUpdate(id,{
+      const updatedUser = await User.findByIdAndUpdate(id,{
         $set: req.body
       },{new: true})
 
     res.status(200).json({
         success:true, 
         message:'Sucessfully updated',
-        data: updatedTour})
+        data: updatedUser})
 
 
     } catch (err) {
@@ -43,11 +43,11 @@ export const updateTour = async(req,res)=>{
     }
 }
 
-//delete tour
-export const deleteTour = async(req,res)=>{
+//delete User
+export const deleteUser = async(req,res)=>{
     const id = req.params.id
     try {
-      await Tour.findByIdAnddelete(id);
+      await User.findByIdAnddelete(id);
 
       res.status(200).json({
         success:true, 
@@ -62,16 +62,16 @@ export const deleteTour = async(req,res)=>{
     }
 }
 
-//getSingle tour
-export const getSingleTour = async(req,res)=>{
+//getSingle User
+export const getSingleUser = async(req,res)=>{
     const id = req.params.id
     try {
-      const tour = await Tour.findById(id);
+      const user = await User.findById(id);
 
       res.status(200).json({
         success:true, 
         message:'Sucessfully',
-        data:tour
+        data:user
       });
 
     } catch (err) {
@@ -81,19 +81,16 @@ export const getSingleTour = async(req,res)=>{
       });
         
     }
-}//getAll tour
-export const getAllTour = async(req,res)=>{
-    //for pagination
-    const page =  parseInt(req.query.page)
-
+}//getAll User
+export const getAllUser = async(req,res)=>{
+    
     try {
-      const tours = await Tour.find({}).skip(page *8).limit(8);
+      const users = await User.find({})
 
       res.status(200).json({
         success:true, 
-        count:tours.length,
         message:'Sucessful',
-        data:tours
+        data:users
       });
 
     } catch (err) {
