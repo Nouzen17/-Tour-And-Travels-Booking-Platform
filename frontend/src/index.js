@@ -1,13 +1,10 @@
-import React from "react";
-import ReactDOM from "react-dom/client";
+// File: frontend/src/index.js
+import React from 'react';
+import ReactDOM from 'react-dom/client';
+import './index.css'; // This line is crucial
+import App from './App';
 
-import App from "./App";
-import "bootstrap/dist/css/bootstrap.min.css";
-import "remixicon/fonts/remixicon.css";
-import "slick-carousel/slick/slick.css";
-import "slick-carousel/slick/slick-theme.css";
-
-const root = ReactDOM.createRoot(document.getElementById("root"));
+const root = ReactDOM.createRoot(document.getElementById('root'));
 root.render(
   <React.StrictMode>
     <App />
