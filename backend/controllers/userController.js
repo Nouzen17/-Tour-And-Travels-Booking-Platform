@@ -1,103 +1,35 @@
-import User from '../models/User.js'
+import User from "../models/User.js";
 
-//create new User
-export const createUser = async (req,res)=>{
-
-    const newUser = new User(req.body)
-
-    try {
-        const savedUser = await newUser.save()
-
-        res.status(200).json({success:true, 
-        message:'Sucessfully created',
-        data:savedUser})
-
-    } catch (err) {
-        res.status(500).json({
-            success:false, 
-            message:'Failed to create. Try again'});
-        
+// Delete user (Admin only)
+export const deleteUser = async (req, res) => {
+  try {
+    const deletedUser = await User.findByIdAndDelete(req.params.id);
+    if (!deletedUser) {
+      return res.status(404).json({ success: false, message: "User not found" });
     }
-}
+    res.status(200).json({ success: true, message: "User deleted successfully" });
+  } catch (err) {
+    res.status(500).json({ success: false, message: "Failed to delete user" });
+  }
+};
 
-//update User
-export const updateUser = async(req,res)=>{
+// Block or unblock user (Admin only)
+export const toggleBlockUser = async (req, res) => {
+  try {
+    const user = await User.findById(req.params.id);
+    if (!user) {
+      return res.status(404).json({ success: false, message: "User not found" });
+    }
 
-    const id = req.params.id
-    try {
-      const updatedUser = await User.findByIdAndUpdate(id,{
-        $set: req.body
-      },{new: true})
+    user.isBlocked = !user.isBlocked;  // toggle block/unblock
+    await user.save();
 
     res.status(200).json({
-        success:true, 
-        message:'Sucessfully updated',
-        data: updatedUser})
-
-
-    } catch (err) {
-        res.status(500).json({
-            success:false, 
-            message:'Failed to update. Try again'});
-        
-    }
-}
-
-//delete User
-export const deleteUser = async(req,res)=>{
-    const id = req.params.id
-    try {
-      await User.findByIdAnddelete(id);
-
-      res.status(200).json({
-        success:true, 
-        message:'Sucessfully deleted'
-      });
-    } catch (err) {
-      res.status(500).json({
-        success:false, 
-        message:'Failed to delete. Try again'
-      });
-        
-    }
-}
-
-//getSingle User
-export const getSingleUser = async(req,res)=>{
-    const id = req.params.id
-    try {
-      const user = await User.findById(id);
-
-      res.status(200).json({
-        success:true, 
-        message:'Sucessfully',
-        data:user
-      });
-
-    } catch (err) {
-      res.status(404).json({
-        success:false, 
-        message:'not found. Try again'
-      });
-        
-    }
-}//getAll User
-export const getAllUser = async(req,res)=>{
-    
-    try {
-      const users = await User.find({})
-
-      res.status(200).json({
-        success:true, 
-        message:'Sucessful',
-        data:users
-      });
-
-    } catch (err) {
-      res.status(404).json({
-        success:false, 
-        message:'not found. Try again'
-      });
-        
-    }
-}
+      success: true,
+      message: user.isBlocked ? "User blocked successfully" : "User unblocked successfully",
+      data: { id: user._id, isBlocked: user.isBlocked },
+    });
+  } catch (err) {
+    res.status(500).json({ success: false, message: "Failed to update block status" });
+  }
+};
