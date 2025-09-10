@@ -1,11 +1,20 @@
 import express from "express";
-import { createBooking } from "../controllers/bookingController.js";
+import {
+  createBooking,
+  getMyBooking,
+  updateMyBooking,
+  deleteMyBooking,
+  cancelMyBooking,
+} from "../controllers/bookingController.js";
 import { verifyToken } from "../utils/verifyToken.js";
 
 const router = express.Router();
 
-// The frontend will send a POST request to '/bookings' to create a new booking
-// Protected route - requires authentication
 router.post("/", verifyToken, createBooking);
+router.get("/me", verifyToken, getMyBooking);
+router.patch("/:id", verifyToken, updateMyBooking);   // <-- add
+router.delete("/:id", verifyToken, deleteMyBooking);  // <-- add
+router.patch("/:id/cancel", verifyToken, cancelMyBooking);
+
 
 export default router;
