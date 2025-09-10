@@ -1,6 +1,8 @@
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useContext } from "react";
 import axios from "axios";
+import { Link } from "react-router-dom";
 import TourCard from "../components/TourCard";
+import { AuthContext } from "../context/AuthContext";
 
 const API_URL = "http://localhost:1530";
 
@@ -56,6 +58,7 @@ const SearchBar = () => {
 };
 
 const HomePage = () => {
+  const { user } = useContext(AuthContext); // ← logged-in user from context
   const [featuredTours, setFeaturedTours] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
@@ -63,14 +66,10 @@ const HomePage = () => {
   useEffect(() => {
     const fetchFeaturedTours = async () => {
       try {
-        // Assuming your backend has a way to get featured tours.
-        // For now, we'll just get all tours and filter on the frontend.
+        
         const { data } = await axios.get(`${API_URL}/tours`);
         if (data.success) {
-          // Filter for tours marked as 'featured'
-          const featured = data.data
-            .filter((tour) => tour.featured)
-            .slice(0, 8); // Show max 8
+          const featured = data.data.filter((tour) => tour.featured).slice(0, 8);
           setFeaturedTours(featured);
         }
       } catch (err) {
@@ -116,8 +115,29 @@ const HomePage = () => {
             />
           </div>
         </div>
+
         <div className="mt-12">
           <SearchBar />
+        </div>
+
+        {/* CTA Row */}
+        <div className="mt-6 flex flex-wrap items-center gap-3">
+          <Link
+            to="/tours"
+            className="px-4 py-2 rounded-xl border shadow-sm hover:shadow transition"
+          >
+            View All Tours
+          </Link>
+
+          {/* Show “My Bookings” only when logged in */}
+          {user && (
+            <Link
+              to="/my-bookings"
+              className="px-4 py-2 rounded-xl bg-orange-500 text-white hover:bg-orange-600 transition"
+            >
+              My Bookings
+            </Link>
+          )}
         </div>
       </section>
 
@@ -136,9 +156,7 @@ const HomePage = () => {
         {!loading && !error && (
           <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-8">
             {featuredTours.length > 0 ? (
-              featuredTours.map((tour) => (
-                <TourCard key={tour._id} tour={tour} />
-              ))
+              featuredTours.map((tour) => <TourCard key={tour._id} tour={tour} />)
             ) : (
               <p className="col-span-4 text-center">
                 No featured tours available at the moment.
