@@ -8,6 +8,9 @@ const AdminDashboard = () => {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
 
+  // NEW: stats state (for total bookings)
+  const [stats, setStats] = useState({ totalBookings: 0 });
+
   // Tour form state
   const [tourForm, setTourForm] = useState({
     title: "",
@@ -27,8 +30,6 @@ const AdminDashboard = () => {
   // Function to fetch all users from the backend
   const fetchUsers = async () => {
     try {
-      // Note: In a real app, you would send an auth token in the headers
-      // const config = { headers: { Authorization: `Bearer ${token}` } };
       const { data } = await axios.get("/users");
       if (data.success) {
         setUsers(data.data);
@@ -56,12 +57,27 @@ const AdminDashboard = () => {
     }
   };
 
-  // useEffect hook to fetch users when the component mounts
+  // NEW: fetch total bookings from /admin/stats
+  const fetchStats = async () => {
+    try {
+      const { data } = await axios.get("/admin/stats");
+      if (data.success) {
+        setStats({ totalBookings: data.data?.totalBookings ?? 0 });
+      }
+    } catch (err) {
+      console.warn(
+        "Failed to fetch admin stats:",
+        err?.response?.data || err.message
+      );
+    }
+  };
+
+  // useEffect hook to fetch data when the component mounts
   useEffect(() => {
     const fetchData = async () => {
       setLoading(true);
       try {
-        await Promise.all([fetchUsers(), fetchTours()]);
+        await Promise.all([fetchUsers(), fetchTours(), fetchStats()]); // ← added fetchStats()
       } catch (error) {
         console.error("Error fetching data:", error);
       } finally {
@@ -75,7 +91,6 @@ const AdminDashboard = () => {
   const handleDeleteUser = async (userId) => {
     if (window.confirm("Are you sure you want to delete this user?")) {
       try {
-        // await axios.delete(`/users/${userId}`, config);
         await axios.delete(`/users/${userId}`);
         // Refresh the user list by filtering out the deleted user
         setUsers(users.filter((user) => user._id !== userId));
@@ -221,6 +236,16 @@ const AdminDashboard = () => {
             </h3>
             <p className="text-4xl font-bold text-green-500">
               {tours.filter((tour) => tour.featured).length}
+            </p>
+          </div>
+
+          {/* NEW: Total Bookings card (will wrap on next line if needed) */}
+          <div className="bg-white p-6 rounded-lg shadow-md">
+            <h3 className="text-lg font-semibold text-gray-600">
+              Total Bookings
+            </h3>
+            <p className="text-4xl font-bold text-purple-600">
+              {stats.totalBookings}
             </p>
           </div>
         </div>
