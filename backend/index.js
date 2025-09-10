@@ -26,10 +26,14 @@ const connect = async () => {
 };
 
 //middleware
-app.use(express.json());
+//app.use(express.json());
+// BEFORE routes
+app.use(express.json());                          // <-- for application/json
+app.use(express.urlencoded({ extended: true }));  // <-- for HTML form posts
+
 app.use(
   cors({
-    origin: "http://localhost:3000",
+    origin: ["http://localhost:3000", "http://localhost:5173"],
     credentials: true,
   })
 );
@@ -39,6 +43,8 @@ app.use("/users", userRoute);
 app.use("/auth", authRoute);
 app.use("/booking", bookingRoute);
 app.use("/reviews", reviewRoute);
+app.use("/admin", adminRoutes);
+
 app.listen(port, () => {
   connect();
   console.log("server listening on port", port);
