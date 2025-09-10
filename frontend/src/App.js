@@ -17,6 +17,8 @@ import AdminDashboard from "./pages/AdminDashboard";
 import ToursPage from "./pages/ToursPage";
 import TourDetailsPage from "./pages/TourDetailsPage";
 import ThankYouPage from "./pages/ThankYouPage";
+//Minjum added
+import MyBookingsPage from "./pages/MyBookingsPage";
 
 function App() {
   return (
@@ -31,6 +33,9 @@ function App() {
               <Route path="/register" element={<RegisterPage />} />
               <Route path="/profile" element={<ProfilePage />} />
               <Route path="/admin" element={<AdminDashboard />} />
+              // Minjum added
+              <Route path="/my-bookings" element={<MyBookingsPage />} />
+
 
               {/* Module 2 Routes */}
               <Route path="/" element={<HomePage />} />
